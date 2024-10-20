@@ -30,30 +30,48 @@ namespace krist_server.Controllers
         {
             try
             {
-                var user = _mapper.Map<User>(registerDto);
-                var response = await _client.Auth.SignUp(registerDto.Email, registerDto.Password);
-
-                if (response?.User == null)
+                Console.WriteLine(JsonConvert.SerializeObject(registerDto));
+                if (string.IsNullOrEmpty(registerDto.Email) || !registerDto.Email.Contains("@"))
                 {
-                    return BadRequest("Registration failed");
+                    return BadRequest("Invalid email address.");
                 }
 
-                var UserID = response.User.Id;
+                if (string.IsNullOrEmpty(registerDto.Password) || registerDto.Password.Length < 6)
+                {
+                    return BadRequest("Password must be at least 6 characters long.");
+                }
 
-                if (string.IsNullOrEmpty(UserID))
+                // Check if the user already exists (assuming _userRepository has a method for this)
+                var existingUser = await _userRepository.GetUserByEmailAsync(registerDto.Email);
+                if (existingUser != null)
+                {
+                    return Conflict("A user with this email already exists.");
+                }
+
+                var user = _mapper.Map<User>(registerDto);
+
+                var response = await _client.Auth.SignUp(registerDto.Email, registerDto.Password);
+                if (response?.User == null)
+                {
+                    return BadRequest("Registration failed. Please try again.");
+                }
+
+                var userID = response.User.Id;
+                if (string.IsNullOrEmpty(userID))
                 {
                     return BadRequest("User ID is null, cannot create user record.");
                 }
 
-                user.UId = UserID;
+                user.UId = userID;
+                await _userRepository.CreateUserAsync(user, userID);
 
-                await _userRepository.CreateUserAsync(user, UserID);
-                return Ok("User created successfully!");
+                return Ok(new { message = "User registered successfully" });
             }
             catch (Exception e)
             {
-                Console.WriteLine("Execption : " + e.Message);
-                return Ok();
+                // Log the exception and return an internal server error
+                Console.WriteLine("Exception: " + e.Message);
+                return StatusCode(500, "An error occurred while processing your request.");
             }
         }
 

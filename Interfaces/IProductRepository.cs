@@ -6,6 +6,7 @@ namespace krist_server.Interfaces
   public interface IProductRepository
   {
     Task<List<ProductDto>> GetProductsAsync();
+    Task<List<ProductDto>> GetFilteredProductsAsync(ProductFilterDto filters);
     Task<Product?> GetProductByIdAsync(string id);
     Task<bool> DoesProductExist(string id);
     Task<ProductDto?> CreateProductAsync(CreateProductDto product);

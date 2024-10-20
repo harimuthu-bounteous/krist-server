@@ -1,6 +1,7 @@
 using krist_server.DTO.CartDTOs;
 using krist_server.Interfaces;
 using krist_server.Models;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Supabase;
 using Supabase.Postgrest.Exceptions;
@@ -27,6 +28,7 @@ namespace krist_server.Repository
 
         // Validate stock and product attributes
         if (product.AvailableStock < addToCartDto.Quantity) return null;
+        if (product.Colors.IsNullOrEmpty() || product.Sizes.IsNullOrEmpty()) return null;
         if (!product.Colors.Contains(addToCartDto.Color) || !product.Sizes.Contains(addToCartDto.Size)) return null;
 
 
@@ -61,7 +63,7 @@ namespace krist_server.Repository
           Size = addToCartDto.Size
         };
 
-        // Console.WriteLine("Cart : " + JsonConvert.SerializeObject(cartItem));
+        Console.WriteLine("Cart : " + JsonConvert.SerializeObject(cartItem));
 
         var createdCartItem = await _client.From<Cart>().Insert(cartItem);
         return createdCartItem.Model;
@@ -79,6 +81,7 @@ namespace krist_server.Repository
       // Fetch all cart items for the user
       var cartItems = await _client.From<Cart>()
           .Where(c => c.UserId == userId)
+          .Order(x => x.CreatedAt, Supabase.Postgrest.Constants.Ordering.Ascending)
           .Get();
 
       // Initialize the response list
@@ -117,7 +120,6 @@ namespace krist_server.Repository
 
       return cartWithProducts;
     }
-
 
     // Update cart item
     public async Task<Cart?> UpdateCartItemAsync(string cartId, int newQuantity)

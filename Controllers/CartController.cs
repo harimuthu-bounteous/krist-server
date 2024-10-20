@@ -19,7 +19,6 @@ namespace krist_server.Controllers
       _cartRepo = cartRepo;
     }
 
-    // Add item to cart
     [Authorize]
     [HttpPost("add")]
     public async Task<ActionResult<Cart>> AddToCart([FromBody] AddToCartDTO addToCartDto)
@@ -43,7 +42,7 @@ namespace krist_server.Controllers
 
     }
 
-    // Fetch cart by user ID
+    [Authorize]
     [HttpGet("{userId}")]
     public async Task<ActionResult<List<Cart>>> GetCartByUserId([FromRoute] string userId)
     {
@@ -57,10 +56,11 @@ namespace krist_server.Controllers
       return Ok(JsonConvert.SerializeObject(cartItems));
     }
 
-    // Update cart item
+    [Authorize]
     [HttpPut("update")]
     public async Task<IActionResult> UpdateCartItem([FromBody] UpdateCartDTO updateCartDto)
     {
+      System.Console.WriteLine("UpdateCartDTO " + JsonConvert.SerializeObject(updateCartDto));
       var updatedCartItem = await _cartRepo.UpdateCartItemAsync(updateCartDto.CartId, updateCartDto.Quantity);
 
       if (updatedCartItem == null)
@@ -71,7 +71,6 @@ namespace krist_server.Controllers
       return Ok(new MutationResponseDTO("Cart item updated successfully"));
     }
 
-    // Delete item from cart
     [HttpDelete("{cartId}")]
     public async Task<IActionResult> DeleteCartItem([FromRoute] string cartId)
     {
@@ -83,7 +82,6 @@ namespace krist_server.Controllers
       return Ok(new MutationResponseDTO("Cart item deleted successfully"));
     }
 
-    // Clear entire cart
     [HttpDelete("clear/{userId}")]
     public async Task<IActionResult> ClearCart(string userId)
     {

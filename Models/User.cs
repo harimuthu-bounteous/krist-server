@@ -1,4 +1,3 @@
-using Newtonsoft.Json;
 using Supabase.Postgrest.Attributes;
 using Supabase.Postgrest.Models;
 
@@ -16,8 +15,11 @@ namespace krist_server.Models
     [Column("email")]
     public string Email { get; set; } = string.Empty;
 
-    [Column("username")]
-    public string Username { get; set; } = string.Empty;
+    [Column("first_name")]
+    public string FirstName { get; set; } = string.Empty;
+
+    [Column("last_name")]
+    public string LastName { get; set; } = string.Empty;
 
     [Column("password")]
     public string? Password { get; set; } = string.Empty;

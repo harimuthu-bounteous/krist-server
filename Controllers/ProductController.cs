@@ -25,6 +25,23 @@ namespace krist_server.Controllers
             return Ok(JsonConvert.SerializeObject(products));
         }
 
+        [HttpPost("filter")]
+        public async Task<ActionResult<List<ProductDto>>> GetFilteredProducts([FromBody] ProductFilterDto filters)
+        {
+            Console.WriteLine("Filters : " + JsonConvert.SerializeObject(filters));
+            var products = await _productRepo.GetFilteredProductsAsync(filters);
+            var totalNumberOfProducts = products.Count;
+
+            if (products == null || totalNumberOfProducts == 0)
+                return Ok(JsonConvert.SerializeObject(new { paginatedProducts = new List<ProductDto>(), totalNumberOfProducts = 0 }));
+
+
+            int skipNumber = (filters.PageNumber - 1) * filters.PageSize;
+            var paginatedProducts = products.Skip(skipNumber).Take(filters.PageSize).ToList();
+            // Console.WriteLine(paginatedProducts.Count);
+            return Ok(JsonConvert.SerializeObject(new { paginatedProducts, totalNumberOfProducts }));
+        }
+
         [HttpGet("{id}")]
         public async Task<ActionResult<ProductDto>> GetProductById([FromRoute] string id)
         {
@@ -71,12 +88,6 @@ namespace krist_server.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProduct(string id)
         {
-            // var user = HttpContext.User;
-            // if (!user.Identity.IsAuthenticated)
-            // {
-            //     var errorResponse = new ErrorResponseDTO("Unauthorized access. Please log in.", StatusCodes.Status401Unauthorized);
-            //     return Unauthorized(errorResponse);
-            // }
 
             var result = await _productRepo.DeleteProductAsync(id);
             if (!result)
@@ -91,7 +102,9 @@ namespace krist_server.Controllers
         {
             var relatedProducts = await _productRepo.GetRelatedProducts(id);
             if (relatedProducts == null || relatedProducts.Count == 0)
-                return Ok();
+                return Ok(JsonConvert.SerializeObject(new List<Product>()));
+
+            relatedProducts = relatedProducts.Take(4).ToList();
 
             return Ok(JsonConvert.SerializeObject(relatedProducts));
         }

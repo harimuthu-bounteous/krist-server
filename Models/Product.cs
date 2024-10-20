@@ -35,10 +35,10 @@ namespace krist_server.Models
         public string Description { get; set; } = string.Empty;
 
         [Column("colors")]
-        public List<string>? Colors { get; set; }
+        public List<string> Colors { get; set; } = [];
 
         [Column("sizes")]
-        public List<string>? Sizes { get; set; }
+        public List<string> Sizes { get; set; } = [];
 
         [Column("images")]
         public List<ProductImage> Images { get; set; } = [];

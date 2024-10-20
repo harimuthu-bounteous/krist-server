@@ -25,6 +25,68 @@ namespace krist_server.Repository
             return productDtos;
         }
 
+        public async Task<List<ProductDto>> GetFilteredProductsAsync(ProductFilterDto filters)
+        {
+            try
+            {
+                if (
+                    filters.Categories.Count == 0 &&
+                    filters.Colors.Count == 0 &&
+                    filters.Sizes.Count == 0 &&
+                    filters.MaxPrice == 1000 &&
+                    filters.MinPrice == 0 &&
+                    filters.SortBy == "featured" &&
+                    filters.PageSize == 16 &&
+                    filters.PageNumber == 1
+                )
+                {
+                    var allProducts = await _client.From<Product>()
+                               .Order(x => x.TotalReviews, Supabase.Postgrest.Constants.Ordering.Descending)
+                               .Get();
+                    return _mapper.Map<List<ProductDto>>(allProducts.Models);
+                }
+
+                // Build query
+                var query = _client.From<Product>();
+
+                // Apply filters
+                if (filters.Categories.Count > 0)
+                    query = (Supabase.Interfaces.ISupabaseTable<Product, Supabase.Realtime.RealtimeChannel>)query.Filter(x => x.Category, Supabase.Postgrest.Constants.Operator.In, filters.Categories);
+
+                if (filters.Colors.Count > 0)
+                    query = (Supabase.Interfaces.ISupabaseTable<Product, Supabase.Realtime.RealtimeChannel>)query.Filter(x => x.Colors, Supabase.Postgrest.Constants.Operator.Overlap, filters.Colors);
+
+                if (filters.Sizes.Count > 0)
+                    query = (Supabase.Interfaces.ISupabaseTable<Product, Supabase.Realtime.RealtimeChannel>)query.Filter(x => x.Sizes, Supabase.Postgrest.Constants.Operator.Overlap, filters.Sizes);
+
+                if (filters.MaxPrice <= 1000 && filters.MinPrice >= 0)
+                {
+                    query = (Supabase.Interfaces.ISupabaseTable<Product, Supabase.Realtime.RealtimeChannel>)query.Where(x => x.Price <= filters.MaxPrice && x.Price >= filters.MinPrice);
+                }
+
+                if (filters.SortBy == "price-asc")
+                    query = (Supabase.Interfaces.ISupabaseTable<Product, Supabase.Realtime.RealtimeChannel>)query.Order(x => x.Price, Supabase.Postgrest.Constants.Ordering.Ascending);
+                else if (filters.SortBy == "price-desc")
+                    query = (Supabase.Interfaces.ISupabaseTable<Product, Supabase.Realtime.RealtimeChannel>)query.Order(x => x.Price, Supabase.Postgrest.Constants.Ordering.Descending);
+                else
+                    query = (Supabase.Interfaces.ISupabaseTable<Product, Supabase.Realtime.RealtimeChannel>)query.Order(x => x.TotalReviews, Supabase.Postgrest.Constants.Ordering.Descending); // Default sort
+
+                var products = await query.Get();
+                return _mapper.Map<List<ProductDto>>(products.Models);
+            }
+            catch (PostgrestException pe)
+            {
+                Console.WriteLine("PostgrestException in 'GetFilteredProductsAsync': " + pe.Message);
+                return [];
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Error in 'GetFilteredProductsAsync': " + e.Message);
+                return [];
+            }
+        }
+
+
         public async Task<Product?> GetProductByIdAsync(string id)
         {
             var response = await _client.From<Product>().Where(x => x.ProductId == id).Single();
